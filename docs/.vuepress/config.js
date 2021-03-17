@@ -22,9 +22,19 @@ module.exports = {
                 'one', /* /bar/three.html */
                 'two'   /* /bar/four.html */
             ],
+            // '/font-end/': [
+            //     'three',  /* /foo/one.html */
+            //     'four'   /* /foo/two.html */
+            // ],
             '/font-end/': [
-                'three',  /* /foo/one.html */
-                'four'   /* /foo/two.html */
+                {
+                    title: 'font-end-basic',
+                    childrem: ['xx', 'yy']
+                },
+                {
+                    title: 'Group2',
+                    childrem: ['']
+                }
             ],
             
         }
