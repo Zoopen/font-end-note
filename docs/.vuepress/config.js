@@ -1,5 +1,5 @@
 module.exports = {
-    title: 'Hello VuePress',
+    title: 'Zoopen\'s playground',
     description: 'Just playing around',
     themeConfig: {
         nav: [
@@ -20,20 +20,40 @@ module.exports = {
             '/study/': [
                 '',      /* /bar/ */
                 'one', /* /bar/three.html */
-                'two'   /* /bar/four.html */
+                'two',   /* /bar/four.html */
+                {
+                    title: 'note',
+                    children: [
+                        {
+                            title: 'TypeScript',
+                            path: 'note/typescript'
+                        },
+                 
+                    ]
+                },
             ],
-            // '/font-end/': [
-            //     'three',  /* /foo/one.html */
-            //     'four'   /* /foo/two.html */
-            // ],
             '/font-end/': [
                 {
                     title: 'font-end-basic',
-                    childrem: ['xx', 'yy']
+                    children: [
+                        {
+                            title: 'xx',
+                            path: 'font-end-basic/xx'
+                        },
+                        {
+                            title: 'yy',
+                            path: 'font-end-basic/yy'
+                        },
+                    ]
                 },
                 {
-                    title: 'Group2',
-                    childrem: ['']
+                    title: 'interview question',
+                    children: [
+                        {
+                            title: 'Js',
+                            path: 'interview-question/javascript'
+                        },
+                    ]
                 }
             ],
             
