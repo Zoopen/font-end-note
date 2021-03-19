@@ -28,6 +28,10 @@ module.exports = {
                             title: 'TypeScript',
                             path: 'note/typescript',
                         },
+                        {
+                            title: 'Flow',
+                            path: 'note/flow',
+                        }
                  
                     ]
                 },
@@ -52,6 +56,10 @@ module.exports = {
                         {
                             title: 'Js',
                             path: 'interview-question/javascript'
+                        },
+                        {
+                            title: '刨根问底',
+                            path: 'interview-question/lucubrate'
                         },
                     ]
                 }
