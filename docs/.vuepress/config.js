@@ -31,6 +31,14 @@ module.exports = {
                         {
                             title: 'Flow',
                             path: 'note/flow',
+                        },
+                        {
+                            title: 'Koa2',
+                            path: 'note/koa2',
+                        },
+                        {
+                            title: 'HTTP协议',
+                            path: 'note/http',
                         }
                  
                     ]
