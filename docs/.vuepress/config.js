@@ -70,6 +70,20 @@ module.exports = {
                             path: 'interview-question/lucubrate'
                         },
                     ]
+                },
+                {
+                    title: 'vue',
+                    children: [
+                        {
+                            title: '基础语法',
+                            path: 'vue/base'
+                        },
+                        {
+                            title: 'Computed和Watch',
+                            path: 'vue/computed&watch'
+                        },
+                        
+                    ]
                 }
 
             ],
