@@ -559,3 +559,245 @@ use-nunjucks/
 
 注意，模板引擎是可以独立使用的，并不需要依赖koa。用npm install安装所有依赖包。
 紧接着，我们要编写使用Nunjucks的函数render。怎么写？方法是查看Nunjucks的[官方文档](https://nunjucks.bootcss.com/)，仔细阅读后，在app.js中编写代码如下:
+``` js
+const nunjucks = require('nunjucks');
+
+function createEnv(path, opts) {
+    var
+        autoescape = opts.autoescape === undefined ? true : opts.autoescape,
+        noCache = opts.noCache || false,
+        watch = opts.watch || false,
+        throwOnUndefined = opts.throwOnUndefined || false,
+        env = new nunjucks.Environment(
+            new nunjucks.FileSystemLoader('views', {
+                noCache: noCache,
+                watch: watch,
+            }), {
+                autoescape: autoescape,
+                throwOnUndefined: throwOnUndefined
+            });
+    if (opts.filters) {
+        for (var f in opts.filters) {
+            env.addFilter(f, opts.filters[f]);
+        }
+    }
+    return env;
+}
+
+var env = createEnv('views', {
+    watch: true,
+    filters: {
+        hex: function (n) {
+            return '0x' + n.toString(16);
+        }
+    }
+});
+```
+变量 env就表示Nunjucks模板引擎对象，它有一个render(view, model)方法，正好传入view和model两个参数，并返回字符串。
+
+创建env需要的参数可以查看文档获知。我们用autoescape = opts.autoescape && true这样的代码给每个参数加上默认值，最后使用new nunjucks.FileSystemLoader('views')创建一个文件系统加载器，从views目录读取模板。
+::: tip warning
+new FileSystemLoader([searchPaths], [opt])，opt为一个对象，包括如下属性：
+- watch -如果为true,当文件系统上的模板变化了，系统会自动更新他。使用前请确保已安装可选依赖chokidar。
+- noCache -如果为true,不使用缓存，模板每次都会重新编译。
+:::
+
+我们编写一个hello.html模板文件，放到views目录下，内容如下：
+``` html
+<h1>Hello {{name}}</h1>
+```
+然后，我们就可以用下面的代码来渲染这个模板：
+``` js 
+var s = enc.render('hello.html', {name: 'Zoopen'});
+console.log(s)
+```
+获得输出如下：
+``` html
+<h1>Hello Zoopen</h1>
+```
+咋一看，这和使用JavaScript模板字符串没啥区别嘛。不过，试试：
+``` js
+var s = env.render('hello.html', {name: '<script>alert("小名")</script>'});
+console.log(s)
+```
+
+获得输出如下:
+``` html
+<h1>Hello &lt;script&gt;alert("小明")&lt;/script&gt;</h1>
+```
+这样就避免了输出恶意脚本。
+
+此外，可以使用Nunjucks提供的功能强的tag,编写条件判断、循环等功能，例如：
+``` html
+<!-- 循环输出 -->
+<body>
+    <h3>Fruits List</h3>
+    {% for f in fruits %}
+    <p>{{f}}</p>
+    {% endfor %}
+</body>
+```
+
+Nunjucks模板引擎最强大的功能在于模板的继承。仔细观察各种网站可以发现，网站的结构实际上是类似的，头部，尾部都是固定格式，只有中间页面不服内容不同。如果每个模板都重复头尾，一旦修改头部或尾部，那就需要改动所有模板。
+
+更好的方式是使用继承。先定义一个基本的网页框架base.html：
+``` html
+<html>
+    <body>
+        {% block header %}<h3>Unnamed</h3>{% endblock %}
+        {% block body %}<div>No body</div>{% endblock %}
+        {% block footer %}<div>copyright</div>{% endblock %}
+    </body>
+</html>
+```
+
+base.html定义了三个可编辑的块，分别命名为header、body、和footer。子模板可以有选择的对块进行重新定义：
+``` html
+<!-- extend.html -->
+{% extends 'base.html' %}
+{% block header %}<h1>{{Header}}</h1>{% endblock %}
+{% block body %}<p>{{body}}</p>{% endblock %}
+```
+
+然后，我们对子模板进行渲染:
+``` js
+console.log(env.render('extend.html', {
+    header: 'HELLO',
+    body: 'bla bla bla...'
+}));
+```
+输出HTML如下:
+``` html
+<html>
+    <body>
+        <h1>HELLO</h1>
+        <p>bla bla bla...</p>
+        <div>copyright</div>
+    </body>
+</html>
+```
+footer没有重定义，所以仍使用父模板的内容
+
+
+## 性能
+最后我们要考虑一下Nunjucks的性能。
+
+对于模板渲染本身来说，速度是非常非常快的，因为就是拼字符串嘛，纯CPU操作。
+
+性能问题主要出现在从文件读取模板内容这一步。这是一个IO操作，在Node.js环境中，我们知道，单线程的JavaScript最不能忍受的就是同步IO，但Nunjucks默认就使用同步IO读取模板文件。
+
+好消息是Nunjucks会缓存已读取的文件内容，也就是说，模板文件最多读取一次，就会放在内存中，后面的请求是不会再次读取文件的，只要我们指定了noCache:false这个参数。
+
+在开发环境下，可以关闭cache,这样每次重新加载模板，便于实时修改模板。在生产环境下，一定要打开cache，这样就不会有性能问题。
+
+Nunjucks也提供了异步读取的方式，但是这样写起来很麻烦，有简单的写法我们就不会考虑复杂的写法。保持代码简单是可维护性的关键。
+
+
+# 使用MVC
+
+## MVC
+我们已经可以用koa处理不同的URL，还可以用Nunjucks渲染模板。现在，是时候把这两者结合起来了！
+
+当用户通过浏览器请求一个URL时，koa将调用某个异步函数处理该URL。在这个异步函数内部，我们用一行代码：
+``` js
+ctx.render('home.html', {name: 'Zoopen'});
+```
+通过Nunjucks把数据用指定的模板渲染成HTML，然后输出给浏览器，用户就可以看到渲染后的页面了：
+![image](https://static.liaoxuefeng.com/files/attachments/1100575804488000/l)
+
+这就是传说中的MVC：Model-View-Controller,中文：模型-视图-控制器。
+
+异步函数是C: Controller, Controller负责业务逻辑，比如检查用户名是否存在，取出用户信息等等；
+
+包含变量{{name}}的模板就是V: View, View负责显示逻辑，通过简单地替换一些变量，View最终输出的就是用户看到的HTML。
+
+MVC中的Model在哪？Model是用来传给View的，这样View在替换变量的时候，就可以从Model中取出相应的数据。
+
+上面的例子中，Model就是一个JavaScript对象：
+``` js
+{name: 'Zoopen'}
+```
+
+下面，我们根据原来的url-koa创建工程view-koa,把koa2、Nunjucks整合起来，然后，把原来直接输出字符串的方式，改为ctx.render(view,model)的方式。
+
+工程view-koa结构如下:
+```
+view-koa/
+|
++- .vscode/
+|  |
+|  +- launch.json <-- VSCode 配置文件
+|
++- controllers/ <-- Controller
+|
++- views/ <-- html模板文件
+|
++- static/ <-- 静态资源文件
+|
++- controller.js <-- 扫描注册Controller
+|
++- app.js <-- 使用koa的js
+|
++- package.json <-- 项目描述文件
+|
++- node_modules/ <-- npm安装的所有依赖包
+```
+
+在package.json中，我们将要用到的依赖包有：
+``` json
+"koa": "2.0.0",
+"koa-bodyparser": "3.2.0",
+"koa-router": "7.0.0",
+"nunjucks": "2.4.2",
+"mime": "1.3.4",
+"mz": "2.4.0"
+```
+
+先用npm install 安装依赖包。
+
+然后，我们准备编写以下两个Controller:
+
+### 处理首页GET /
+
+我们定义一个async函数处理首页URL/:
+``` js
+async (ctx, next) => {
+    ctx.render('index.html', {
+        title: 'Welcome'
+    });
+}
+```
+
+注意到koa并没有在ctx对象上提供render方法，这里我们假设应该这么使用，这样，我们在编写Controller的时候，最后一步调用ctx.render(view, model)就完成了页面的输出。
+
+### 处理登陆请求POST /signin
+我们再定义一个async函数处理登陆请求 /signin：
+``` js
+async (ctx, next) => {
+    var email = ctx.request.body.email || '',
+        password = ctx.request.body.password || '';
+    
+    if(email === 'admin@me.com' && password === '123456') {
+        // 登陆成功
+        ctx.render('signin-ok.html', {
+            title: 'Sign In Ok',
+            name: 'Mr Node'
+        });
+    }else {
+        //登录失败
+        ctx.render('signin-failed.html', {
+            title: 'Sign In Failed'
+        });
+    }
+}
+```
+
+由于登陆请求是一个POST，我们就用ctx.request.body.<name>拿到POST请求的数据，并给一个默认值。
+
+登陆成功时我们用signin-ok.html渲染，登陆失败时我们用signin-failed.html渲染，所以，我们一共需要以下3个View:
+- index.html
+- signin-ok.html
+- signin-failed.html
+
+### 编写View
+在编写View的时候，我们实际上是在编写HTML页。为了让页面看起来美观大方，使用一个现成的CSS框架是非常有必要的。我们用[Bootsrap](https://getbootstrap.com/)
