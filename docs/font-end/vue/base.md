@@ -459,3 +459,448 @@ const app = Vue.component({
 全局组件：只要定义了，处处可以使用，性能相对不高，但是使用方便，组件名称建议使用小写字母单词，中间用横线间隔。
 局部组件：定义了要注册之后才能使用，使用有些麻烦，组件名称建议首字母大写，驼峰式命名。
 局部组件使用时，要做一个名字和组件间的映射对象，不写的话Vue底层也会自动帮你常识映射。
+
+
+## 组件间传值及传值检验
+### 父传子
+父组件调用子组件标签，并通过标签的属性向子组件传值，子组件通过props接受父组件传递过来的值，就可以在子组件中使用该值了。
+``` js
+const app = Vue.createApp({
+    data() {
+        return {
+            num: 123
+        }
+    },
+    template: `
+        <div>
+            <test content="hello world! Zoopen" :num="num" />    
+        </div>
+    `
+})
+
+app.component('test', {
+    props: ['content'],
+    template: `<div>{{content}}</dic>`
+})
+const vm = app.mount("#root");
+```
+其中，content为静态传值，num为动态传值。静态传值只能传递字符串，动态传值传递类型更丰富。
+
+### 校验
+子组件对父组件传递过来的值做一个校验。
+
+类型校验
+子组件在接收props时，使用对象的方式：
+``` js
+props: {
+  content: String
+}
+```
+上面如果传递过来的数据非字符串，控制台会出现警告信息。
+
+也可以通过required规定该参数必传，否则警告：
+``` js
+props: {
+  content: {
+    type: String,
+    required: true
+  }
+}
+```
+
+可以通过default设置默认值，通过validator对值进行深度的校验：
+``` js
+props: {
+    content: {
+        type: Number,
+        required: true,
+        validator: function(value) {
+            return value > 1000;
+        },
+        default: function() {
+            return 123;
+        }
+    },
+    num: Function
+},
+```
+type:String, Boolean, Array, Object, Function, Number, Symbol
+required: ture/false
+default: 234
+validator
+
+### 向子组件传递多个参数
+当需要传递多个参数给子组件时，你可能会这样写：
+``` js
+const app = Vue.createApp({
+    data() {
+        return {
+            num: 234,
+            a: 123,
+            b:456,
+            c: 789
+        }
+    },
+    template: `
+        <div>
+            <test :content="num" :a="a" :b="b" :c="c" />    
+        </div>
+    `
+})
+
+app.component('test', {
+    props: ['content', 'a', 'b', 'c'],
+    
+    template: `<div>test
+        {{content}}-{{a}}-{{b}}-{{c}}
+        </div>`
+})
+const vm = app.mount("#root");
+```
+如上父组件传递多个数据给子组件，一个一个v-bind太麻烦了，可以使用另一种办法：
+``` js
+const app = Vue.createApp({
+    data() {
+        return {
+          params: {
+            content: 234,
+            a: 123,
+            b:456,
+            c: 789
+          }
+
+        }
+    },
+    template: `
+        <div>
+            <test v-bind="params" />    
+        </div>
+    `
+})
+
+app.component('test', {
+    props: ['content', 'a', 'b', 'c'],
+    
+    template: `<div>test
+        {{content}}-{{a}}-{{b}}-{{c}}
+        </div>`
+})
+const vm = app.mount("#root");
+```
+这种方法跟上面那种是等价的。
+
+### 参数大小写问题
+在传递参数时，当参数名称太长时，考虑短横杠连接，如果写成小驼峰，大驼峰，html将会自动将其转为小写字母。子组件接受参数时，将短横杠后面首个字母大写的方式接收。
+``` js
+  const app = Vue.createApp({
+        data() {
+            return {
+                content: 234,
+            }
+        },
+        template: `
+            <div>
+                <test :content-abc="content" />    
+            </div>
+        `
+    })
+
+    app.component('test', {
+        props: ['contentAbc'],
+
+        template: `<div>test
+            {{contentAbc}}
+            </div>`
+    })
+    const vm = app.mount("#root");
+```
+即传的时候使用content-abc
+  接的时候使用contentAbc
+
+## 单项数据流的理解
+父组件向子组件传递数据，子组件接收后可以使用这些数据，但是子组件不能直接修改传递过来的数据，即props是只读的。
+以下代码，期望点击div时，count自增，但是这是不被允许的：
+``` js
+    const app = Vue.createApp({
+        data() {
+            return {
+                count: 1,
+            }
+        },
+        template: `
+            <div>
+                <counter :count="count" />    
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['count'],
+ 
+        template: `
+        <div @click="count+=1">{{count}}</div>`
+    })
+    const vm = app.mount("#root");
+```
+
+那么，我们难道就无法实现我们想要的功能了吗?我们可以试试这样做：
+``` js
+const app = Vue.createApp({
+    data() {
+        return {
+            count: 1,
+        }
+    },
+    template: `
+        <div>
+            <counter :count="count" />    
+        </div>
+    `
+})
+
+app.component('counter', {
+    props: ['count'],
+    data() {
+        return {
+            myCount: this.count,
+        }
+    },
+    template: `
+    <div @click="myCount+=1">{{myCount}}</div>`
+})
+const vm = app.mount("#root");
+```
+通过props接收到父组件传递过来的参数后，保存到自己的data状态中，每个组件都能操作自己的状态，这时候，就可以实现点击div,count自增了。
+
+为什么Vue中子组件不能直接改变父组件的数据呢。为何要强调单项数据流的概念呢。
+假设现在子组件可以直接修改父组件数据：
+``` js
+const app = Vue.createApp({
+        data() {
+            return {
+                count: 1,
+            }
+        },
+        template: `
+            <div>
+                <counter :count="count" />    
+                <counter :count="count" />    
+                <counter :count="count" />    
+            </div>
+        `
+    })
+    app.component('counter', {
+        props: ['count'],
+        template: `
+        <div @click="count+=1">{{count}}</div>`
+    })
+    const vm = app.mount("#root");
+```
+在父组件中定义几个counter组件,现在，当我点击第一个counter,那么他会执行count+=1，（假设现在子组件可以直接修改父组件数据），那么父组件中的count将变为2，此时，其他的counter组件也将受到影响，因为他们用的也是父组件的count数据。
+
+这样带来什么问题呢。组件之间的数据互相耦合无法区分开，不利于组件的维护，也避免一些以后很难找的BUG。
+
+
+# Non-props
+当父组件给子组件传递参数，子组件不使用props接收时，我们怎么获取这些参数呢：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" />
+            </div>
+        `
+    })
+    app.component('counter', {
+        template: `
+        <div>Counter</div>
+        `
+    })
+
+    app.mount('#root')
+```
+此时，打开浏览器控制台，选中该元素，可以看到：
+``` html
+<div>
+  <div msg="Hello">Counter</div>
+</div>
+```
+此时，底层做了什么操作呢，它把父组件传递过来的内容，放到子组件最外层的标签上，作为最外层标签的一个属性。
+
+那如果此时我们不想要子组件最外层标签有这个属性，怎么办呢？可以使用inheritAttrs: false：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" />
+            </div>
+        `
+    })
+    app.component('counter', {
+        inheritAttrs: false,
+        template: `
+        <div>Counter</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+## 一般什么时候用Non-props呢？
+当我们想给子组件添加style， class的时候
+
+
+当子组件有多个根节点的时候，会发现Non-props不起作用：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" />
+            </div>
+        `
+    })
+    app.component('counter', {
+        template: `
+        <div>Counter</div>
+        <div>Counter</div>
+        <div>Counter</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+如果此时想要它生效，可以这样：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" />
+            </div>
+        `
+    })
+    app.component('counter', {
+        template: `
+        <div>Counter</div>
+        <div v-bind="$attrs">Counter</div>
+        <div>Counter</div>
+        `
+    })
+
+    app.mount('#root')
+```
+通过绑定$attrs, 将父组件传递过来的所有Non-props属性接收到指定节点。
+
+
+如果父组件传递了多个Non-props，想在子组件中接收特定的Non-props，可以通过v-bind:xxx="$attrs.xxx",就像这样：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" style='color:red' />
+            </div>
+        `
+    })
+    app.component('counter', {
+        template: `
+        <div v-bind:msg="$attrs.msg">Counter</div>
+        <div v-bind="$attrs">Counter</div>
+        <div>Counter</div>
+        `
+    })
+    app.mount('#root')
+
+```
+
+为什么用v-bind, 因为$attrs.xxx是js表达式，而不是一个字符串。
+
+除了以上的在template标签中v-bind接收$attrs外，还可以在生命周期中使用：
+``` js
+    const app = Vue.createApp({
+        template: `
+            <div>
+                <counter msg="Hello" style='color:red' />
+            </div>
+        `
+    })
+    app.component('counter', {
+        beforeMount() {
+            console.log(this.$attrs)
+        },
+        mounted() {
+            console.log(this.$attrs)
+        },
+        template: `
+        <div v-bind:msg="$attrs.msg">Counter</div>
+        <div v-bind="$attrs">Counter</div>
+        <div>Counter</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+
+
+
+
+# Vue的生命周期
+在vue实例开始创建、运行到销毁的过程，就是vue的生命周期
+
+生命周期函数：在Vue生命周期的某一时刻自动执行的函数。
+
+生命周期钩子 = 生命周期函数 = 生命周期事件。
+## vue2版本的生命周期
+![image](https://cn.vuejs.org/images/lifecycle.png)
+
+## vue3版本的生命周期
+![image](https://v3.vuejs.org/images/lifecycle.svg)
+
+## 1.开始阶段
+创建vue实例，并挂载到页面元素中。
+``` js
+const app = Vue.createApp(options)
+app.mount(el)
+```
+## 第二步
+初始化页面中的事件和生命周期函数
+``` js
+init events & lifecycle
+```
+完成第二步后自动触发beforeCreate，在实例生成之前执行
+
+## 第三步
+初始化数据和模板绑定相关内容
+``` js
+init injections & reactivity
+```
+完成第三步后自动触发created，在实例生成之后执行
+
+至此，vue实例创建完成。
+
+## 第四步
+判断是否有template选项。
+如果有则将该template编译成render函数
+
+如果没有则将app.mount(el)中的el的innerHTML作为template
+
+之后，会触发beforeMount, 在组件渲染到页面之前执行
+
+## 第五步
+创建app.$el并且将其添加到el中。
+即组件内容渲染到页面。
+
+完成后执行mounted，在组件渲染到页面之后执行
+
+## 第六步
+当数据（状态）发生改变,虚拟DOM重新渲染和修补之前(页面重新渲染之前)，执行beforeUpdate
+
+当数据(状态)发生改变，虚拟DOM重新渲染和修补之后(页面重新渲染之后)，执行updated
+
+
+## 第七步
+当app.unmount()被调用
+
+Vue应用失效时，自动执行beforeUnmount
+Vue应用失效时，且dom完全销毁之后，执行unmounted
+
