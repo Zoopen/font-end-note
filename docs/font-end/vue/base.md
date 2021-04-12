@@ -841,6 +841,186 @@ const app = Vue.createApp({
 ```
 
 
+# 父子组件通过事件通信
+## 怎么用
+已知，父组件向子组件中传递参数，父组件在使用子组件时通过属性向子组件传递数据，子组件通过props接收。
+如果我们想要在子组件中，监听点击事件来改变父组件的数据，应该怎么做呢？
+
+我们可以在父组件使用子组件时绑定一个自定义事件add-one,
+在子组件中使用this.$emit(event, param1, param2), 传入事件名称来触发一个事件：
+
+``` js
+const app = Vue.createApp({
+  data() {
+    return {
+      count: 1
+    }
+  },
+  methods: {
+    handleAddOne() {
+      this.count += 1;
+    }
+  },
+  template: `
+    <div>
+      <counter :count="count" @add-one="handleAddOne"/>
+    </div>
+  `
+})
+
+app.component('counter', {
+  props: ['count'],
+  methods: {
+    handleItemClick() {
+      this.$emit('addOne');
+    }
+  },
+  template: `
+    <div @click="handleItemClick">Counter {{count}}</div>
+  `
+})
+
+app.mount('#root')
+```
+## 使用事件抛出一个值
+有的时候用一个事件来抛出一个特定的值是非常有用的。例如我们可能想让 <counter>> 组件决定它每次要加多少。这时可以使用 $emit 的第二个参数来提供这个值：
+``` js
+    const app = Vue.createApp({
+        data() {
+            return {
+                count: 1
+            }
+        },
+        methods: {
+            handleAdd(param1, param2) {
+                this.count += param2;
+            }
+        },
+        template: `
+            <div>
+                <counter :count="count" @add="handleAdd"/>
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['count'],
+        methods: {
+            handleItemClick() {
+                this.$emit('add', 2, 3);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{count}}</div>
+        `
+    })
+
+    app.mount('#root')
+```
+我们也可以在子组件中完成对值的修改，将修改后的值传递给父组件：
+``` js
+  const app = Vue.createApp({
+        data() {
+            return {
+                count: 1
+            }
+        },
+        methods: {
+            handleAdd(count) {
+                this.count = count;
+            }
+        },
+        template: `
+            <div>
+                <counter :count="count" @add="handleAdd"/>
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['count'],
+        methods: {
+            handleItemClick() {
+                this.$emit('add', this.count + 2);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{count}}</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+## emits 声明与校验
+可以对$emit中使用的事件进行声明, 如果未经声明就使用，触发该事件时，会报警告：
+``` js
+app.component('counter', {
+    props: ['count'],
+    emits: ['counter'],
+    methods: {
+        handleItemClick() {
+            this.$emit('add', this.count + 2);
+        }
+    },
+    template: `
+    <div @click="handleItemClick">Counter {{count}}</div>
+    `
+})
+```
+上面代码emits中没有声明add, 所以触发时会警告。
+
+除了使用数组的形式，还可以使用对象的形式对emits进行校验：
+``` js
+app.component('counter', {
+    props: ['count'],
+    emits: {
+        add: (count)=> {//事件参数count为$emit传递过来的第二个参数
+            if(count < 0) {
+                return true;
+            }
+            return false;
+        }
+    },
+    methods: {
+        handleItemClick() {
+            this.$emit('add', this.count + 2);
+        }
+    },
+    template: `
+    <div @click="handleItemClick">Counter {{count}}</div>
+    `
+})
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
