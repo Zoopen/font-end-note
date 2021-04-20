@@ -383,6 +383,7 @@ data: {
     <option v-for="item in options" :value="item.value">{{item.text}}</option>
 </select>
 ```
+
 因为item.value为表达式，所有使用:value。
 
 #### 更多功能
@@ -396,10 +397,12 @@ lazy, 当input框输入时，不再实时更新，只有blur时才触发。
 ``` html
 <input v-model.lazy="msg" />
 ```
+
 number, 当input框输入数字时，检查其类型，会发现其返回的类型为string, 当需要设置返回类型为number时，使用number修饰符。
 ``` html
 <input v-model.number="msg" />
 ```
+
 trim,去除首尾空格。
 
 # 组件的定义及复用性，局部组件和全局组件
@@ -438,10 +441,11 @@ const app = Vue.component({
   //  components: {counter},//当key-value值一样时，可以使用es6语法
   //使用局部组件
   template: `
-    <counter/>
+    <counter />
   `
 })
 ```
+
 在使用局部组件时，可以为其改名：
 ``` js
 const app = Vue.component({
@@ -455,6 +459,7 @@ const app = Vue.component({
   `
 })
 ```
+
 ### 全局组件vs局部组件
 全局组件：只要定义了，处处可以使用，性能相对不高，但是使用方便，组件名称建议使用小写字母单词，中间用横线间隔。
 局部组件：定义了要注册之后才能使用，使用有些麻烦，组件名称建议首字母大写，驼峰式命名。
@@ -484,6 +489,7 @@ app.component('test', {
 })
 const vm = app.mount("#root");
 ```
+
 其中，content为静态传值，num为动态传值。静态传值只能传递字符串，动态传值传递类型更丰富。
 
 ### 校验
@@ -496,6 +502,7 @@ props: {
   content: String
 }
 ```
+
 上面如果传递过来的数据非字符串，控制台会出现警告信息。
 
 也可以通过required规定该参数必传，否则警告：
@@ -524,6 +531,7 @@ props: {
     num: Function
 },
 ```
+
 type:String, Boolean, Array, Object, Function, Number, Symbol
 required: ture/false
 default: 234
@@ -557,6 +565,7 @@ app.component('test', {
 })
 const vm = app.mount("#root");
 ```
+
 如上父组件传递多个数据给子组件，一个一个v-bind太麻烦了，可以使用另一种办法：
 ``` js
 const app = Vue.createApp({
@@ -587,6 +596,7 @@ app.component('test', {
 })
 const vm = app.mount("#root");
 ```
+
 这种方法跟上面那种是等价的。
 
 ### 参数大小写问题
@@ -614,6 +624,7 @@ const vm = app.mount("#root");
     })
     const vm = app.mount("#root");
 ```
+
 即传的时候使用content-abc
   接的时候使用contentAbc
 
@@ -670,6 +681,7 @@ app.component('counter', {
 })
 const vm = app.mount("#root");
 ```
+
 通过props接收到父组件传递过来的参数后，保存到自己的data状态中，每个组件都能操作自己的状态，这时候，就可以实现点击div,count自增了。
 
 为什么Vue中子组件不能直接改变父组件的数据呢。为何要强调单项数据流的概念呢。
@@ -696,6 +708,7 @@ const app = Vue.createApp({
     })
     const vm = app.mount("#root");
 ```
+
 在父组件中定义几个counter组件,现在，当我点击第一个counter,那么他会执行count+=1，（假设现在子组件可以直接修改父组件数据），那么父组件中的count将变为2，此时，其他的counter组件也将受到影响，因为他们用的也是父组件的count数据。
 
 这样带来什么问题呢。组件之间的数据互相耦合无法区分开，不利于组件的维护，也避免一些以后很难找的BUG。
@@ -719,12 +732,14 @@ const app = Vue.createApp({
 
     app.mount('#root')
 ```
+
 此时，打开浏览器控制台，选中该元素，可以看到：
 ``` html
 <div>
   <div msg="Hello">Counter</div>
 </div>
 ```
+
 此时，底层做了什么操作呢，它把父组件传递过来的内容，放到子组件最外层的标签上，作为最外层标签的一个属性。
 
 那如果此时我们不想要子组件最外层标签有这个属性，怎么办呢？可以使用inheritAttrs: false：
@@ -789,6 +804,7 @@ const app = Vue.createApp({
 
     app.mount('#root')
 ```
+
 通过绑定$attrs, 将父组件传递过来的所有Non-props属性接收到指定节点。
 
 
@@ -848,7 +864,6 @@ const app = Vue.createApp({
 
 我们可以在父组件使用子组件时绑定一个自定义事件add-one,
 在子组件中使用this.$emit(event, param1, param2), 传入事件名称来触发一个事件：
-
 ``` js
 const app = Vue.createApp({
   data() {
@@ -863,7 +878,7 @@ const app = Vue.createApp({
   },
   template: `
     <div>
-      <counter :count="count" @add-one="handleAddOne"/>
+      <counter :count="count" @add-one="handleAddOne" />
     </div>
   `
 })
@@ -882,8 +897,9 @@ app.component('counter', {
 
 app.mount('#root')
 ```
+
 ## 使用事件抛出一个值
-有的时候用一个事件来抛出一个特定的值是非常有用的。例如我们可能想让 <counter>> 组件决定它每次要加多少。这时可以使用 $emit 的第二个参数来提供这个值：
+有的时候用一个事件来抛出一个特定的值是非常有用的。例如我们可能想让 counter组件决定它每次要加多少。这时可以使用 $emit 的第二个参数来提供这个值：
 ``` js
     const app = Vue.createApp({
         data() {
@@ -917,6 +933,7 @@ app.mount('#root')
 
     app.mount('#root')
 ```
+
 我们也可以在子组件中完成对值的修改，将修改后的值传递给父组件：
 ``` js
   const app = Vue.createApp({
@@ -968,6 +985,7 @@ app.component('counter', {
     `
 })
 ```
+
 上面代码emits中没有声明add, 所以触发时会警告。
 
 除了使用数组的形式，还可以使用对象的形式对emits进行校验：
@@ -993,27 +1011,289 @@ app.component('counter', {
 })
 ```
 
+## 父子组件使用到双向绑定时
+父子组件中使用v-model绑定数据时，使用固定语法，如下：
+``` js
+   const app = Vue.createApp({
+        data() {
+            return {
+                count: 1
+            }
+        },
+        template: `
+            <div>
+                <counter 
+                v-model="count"
+                />
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['modelValue'],
+        methods: {
+            handleItemClick() {
+                this.$emit('update:modelValue', this.modelValue + 2);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{modelValue}}</div>
+        `
+    })
+
+    app.mount('#root')
+```
+父组件调用子组件时，通过v-model绑定数据，子组件在props中使用modelValue接收，子组件在通过this.$emit与父组件通信时，第一个参数使用'update:modelValue'。
+
+如果想要使用别名，可以这样修改：
+``` js
+   const app = Vue.createApp({
+        data() {
+            return {
+                count: 1
+            }
+        },
+        template: `
+            <div>
+                <counter 
+                v-model:app="count"
+                />
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['app'],
+        methods: {
+            handleItemClick() {
+                this.$emit('update:app', this.app + 2);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{app}}</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+### 使用多个v-model双向绑定
+如果需要绑定多个属性，我们可以这样：
+``` js
+const app = Vue.createApp({
+        data() {
+            return {
+                count: 1,
+                count1: 1
+            }
+        },
+        template: `
+            <div>
+                <counter 
+                v-model:count="count" v-model:count1="count1"
+                />
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: ['count', 'count1'],
+        methods: {
+            handleItemClick() {
+                this.$emit('update:count', this.count + 2);
+            },
+            handleItemClick1() {
+                this.$emit('update:count1', this.count1 + 2);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{count}}</div>
+        <div @click="handleItemClick1">Counter {{count1}}</div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+### 自定义v-model修饰符
+``` js
+const app = Vue.createApp({
+        data() {
+            return {
+                count: 'a',
+            }
+        },
+        template: `
+            <div>
+                <counter 
+                v-model.uppercase="count" 
+                />
+            </div>
+        `
+    })
+
+    app.component('counter', {
+        props: {
+            'modelValue': String,
+            'modelModifiers': {
+                default: () => ({})
+            }
+        },
+        mounted() {
+            console.log(this.modelModifiers)
+        },
+        methods: {
+            handleItemClick() {
+                let newValue = this.modelValue + 'b';
+                if(this.modelModifiers.uppercase) {
+                    newValue = newValue.toUpperCase();
+                }
+                this.$emit('update:modelValue', newValue);
+            }
+        },
+        template: `
+        <div @click="handleItemClick">Counter {{modelValue}}</div>
+        `
+    })
+
+    app.mount('#root')
+
+```
+通过modelModifiers接受v-model修饰符, 通过this.modelModifiers判断修饰符是否存在，来对数据做一些处理。
+
+## 使用插槽和具名插槽解决组件内容传递问题
+父组件可以使用slot插槽向子组件传递数据（标签，字符串，子组件），子组件使用slot标签接收。例如：
+``` js
+const app = Vue.createApp({
+        template: `
+            <myForm>
+                <div>提交</div>
+            </myForm>
+            <myForm>
+                <button>提交</button>
+            </myForm>
+        `
+    })
+    app.component('myForm', {
+        methods: {
+            handleClick() {
+                alert(123)
+            }
+        },
+        template: `
+            <div>
+                <input />
+                <span @click="handleClick">
+                    <slot></slot>
+                </span>
+                
+            </div>
+        `
+    })
+
+    app.mount('#root')
+```
+
+使用插槽需要注意，无法直接在父组件传递时绑定事件：
+``` html
+    <myForm>
+        <div @click="handleClick">提交</div>
+    </myForm>
+```
+上面代码将会报错。
+
+可以通过在子组件中，包多一层的方式解决插槽绑定事件问题。
 
 
+### slot中数据作用域的问题
+虽然使用插槽后，父组件中调用的子组件标签内的内容会替换子组件中slot标签中的内容，但是，如果涉及到数据的问题，父模板里调用的数据属性，使用的都是父模板里的数据。
+```js
+    const app = Vue.createApp({
+        data() {
+            return {
+                text: '提交'
+            }
+        },
+        template: `
+            <myForm>
+                <div>{{text}}</div>
+            </myForm>
+            <myForm>
+                <button>{{text}}</button>
+                <test />
+            </myForm>
+        `
+    })
+
+    app.component('myForm', {
+        data() {
+            return {
+                text: '123'
+            }
+        },
+        methods: {
+            handleClick() {
+                alert(123)
+            }
+        },
+        template: `
+            <div>
+                <input />
+                <span @click="handleClick">
+                    <slot></slot>
+                </span>
+                
+            </div>
+        `
+    })
+    
+    app.component('test', {
+        template: `<div>test</div>`
+    })
+
+    app.mount('#root')
+```
+最终text渲染结果为‘提交’
 
 
+### slot默认值
+当slot不传值时，slot默认值会起作用：
+``` html
+<slot>default Value</slot>
+```
 
 
+### 具名slot
+上面我们都是整块slot一起传递，我们可以通过v-slot为slot命名，然后在子组件中使用拆分使用：
+``` js
+ const app = Vue.createApp({
+        template: `
+            <layout>
+                <template v-slot:header>
+                    <div>header</div>
+                </template>
+                <template v-slot:footer>
+                    <div>footer</div>
+                </template>
+            </layout>
+        `
+    })
+    app.component('layout', {
+        template: `<div>
+                <slot name="header"></slot>
+                <div>content</div>
+                <slot name="footer"></slot>
+            </div>`
+    })
+
+    app.mount('#root')
+```
+注意：v-slot不允许直接作用在标签上，只能用在components 或 template标签上。
 
 
+涉及到dom的传递，使用slot方式会简便许多。
 
-
-
-
-
-
-
-
-
-
-
-
-
+现在，我们可以通过props和slot两种方式实现父组件向子组件传递数据。
 
 
 
